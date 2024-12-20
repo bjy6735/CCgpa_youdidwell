@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학점 계산기</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: "Jua", serif;
+        }
+        h1 {
+            font-weight: 700;
+            color: #ff623f;
+        }
+        label, button {
+            font-weight: 400;
+        }
+    </style>
+</head>
+
+<body>
+    <div align=center>
+    <h1>🔥학점 계산기🔥</h1>
+
+    <!-- 과목 개수 입력 -->
+    <div id="step-1">
+        <p><label>만나서 반가워요!</label></p>
+        <p><label>🐱과목수, 성적, 이수시간을 입력하면 성적을 알려줄게요🐱</label></p>
+        <p>🍀☘️🍀</p>
+        <p><label>몇과목의 성적을 계산해볼까요?:</label></p>
+        <input type="number" id="num-subjects" min="1" required>
+        <button onclick="generateGradeFields()">✅</button>
+    </div>
+
+    <!-- 성적 입력 -->
+    <div id="step-2" style="display: none;">
+        <form id="grade-form">
+            <div id="grade-fields"></div>
+            <button type="button" onclick="submitGrades()">🐠학점 계산하기🐡</button>
+        </form>
+    </div>
+
+    <!-- 결과 출력 -->
+    <div id="step-3" style="display: none;">
+        <h2>🐈: 수고했야옹</h2>
+        <p>평균학점➡️ <span id="gpa"></span></p>
+        <img id="chart" alt="성적 비율 그래프">
+        
+        <!-- 만족도 -->
+        <label for="satisfaction-select" style="display: block; margin-top: 10px;">성적에 만족하시나요?</label>
+        <select name="satisfaction" id="satisfaction-select" multiple>
+            <option value="만족!/yes">만족!/yes</option>
+            <option value="조금은요/a_little_bit">조금은요/a_little_bit</option>
+            <option value="모르겠어요/i'm_not_sure">모르겠어요/i'm_not_sure</option>
+            <option value="딱히요/not_exactly">딱히요/not_exactly</option>
+            <option value="아니요/no">아니요/no</option>
+            <option value="슬퍼요/i'm_sad">슬퍼요/i'm_sad</option>
+        </select>
+
+        <!-- 이름 -->
+        <p><label>근데 혹시.. 이름이 뭐예요?😼</label></p>
+        <input type="text" id="myname" placeholder="あなたの名前です。">
+
+        <p><label>뭔가 또 하고싶은 말이 있나요? 들어줄게요!😺</label></p>
+        <input type="text" id="talktome" placeholder="어느 말이든지 좋아요">
+
+        <button onclick="submitSatisfaction()">talk!</button>
+        <p id="chatbot-response"></p>
+    </div>
+
+    <script>
+        function generateGradeFields() {
+            const numSubjects = parseInt($("#num-subjects").val());
+            if (isNaN(numSubjects) || numSubjects < 1) {
+                alert("올바른 과목 수를 입력하세요.");
+                return;
+            }
+
+            $("#grade-fields").empty();
+            for (let i = 0; i < numSubjects; i++) {
+                $("#grade-fields").append(`
+                    <div>
+                    <p>
+                        <label>과목 ${i + 1} 성적:</label>
+                        <input type="text" name="grade_${i}" placeholder="예: A+" required>
+                        <label>이수 시간:</label>
+                        <input type="number" name="credit_${i}" min="1" required>
+                    </p>
+                    </div>
+                `);
+            }
+
+            $("#step-1").hide();
+            $("#step-2").show();
+        }
+
+        function submitGrades() {
+            const grades = [];
+            $("#grade-form div").each(function () {
+                const grade = $(this).find("input[name^='grade']").val();
+                const credit = parseInt($(this).find("input[name^='credit']").val());
+                grades.push([grade, credit]);
+            });
+
+            $.ajax({
+                url: "/calculate",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ grades: grades }),
+                success: function (data) {
+                    $("#gpa").text(data.gpa.toFixed(2));
+                    $("#chart").attr("src", data.chart_path);
+                }
+            });
+
+            $("#step-2").hide();
+            $("#step-3").show();
+        }
+
+        function submitSatisfaction() {
+            const satisfaction = $("#satisfaction-select").val();
+            const myname = $("#myname").val();
+            const talktome = $("#talktome").val();
+            $.ajax({
+                url: "/chatbot",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ '선택정보': satisfaction, '이름': myname, '말': talktome }),
+                success: function (data) {
+                    $("#chatbot-response").text(data.message);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
