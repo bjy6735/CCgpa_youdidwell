@@ -1,1 +1,1 @@
-# ccGPAyoudidwell
+# Calculate your grade with Ollama.
